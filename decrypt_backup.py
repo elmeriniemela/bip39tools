@@ -9,9 +9,6 @@ import sys
 from pathlib import Path
 
 
-MAGIC = b"7z\xbc\xaf'\x1c"
-
-
 def crc32(data):
     return binascii.crc32(data) & 0xFFFFFFFF
 
@@ -270,6 +267,61 @@ def read_file_name(header, start):
     raise ValueError("invalid 7z file name")
 
 
+def decrypt_encoded_header(header, streams, password):
+    if not header or header[0] != 0x17:
+        return header, None
+
+    offset = 1
+    if offset >= len(header) or header[offset] != 0x06:
+        raise ValueError("unsupported 7z encoded header")
+    offset += 1
+
+    pack_pos, offset = read_var64_at(header, offset)
+    num_pack_streams, offset = read_var64_at(header, offset)
+    if num_pack_streams != 1:
+        raise ValueError("unsupported 7z encoded header")
+
+    if offset >= len(header) or header[offset] != 0x09:
+        raise ValueError("unsupported 7z encoded header")
+    offset += 1
+    packed_size, offset = read_var64_at(header, offset)
+    if offset >= len(header) or header[offset] != 0:
+        raise ValueError("invalid 7z encoded header pack info")
+    offset += 1
+
+    props, offset, unpacked_size_count = read_aes_properties(header, offset)
+    if unpacked_size_count != 1:
+        raise ValueError("unsupported 7z encoded header")
+    rounds_power, salt, iv = parse_aes_properties(props)
+
+    if offset >= len(header) or header[offset] != 0x0c:
+        raise ValueError("invalid 7z encoded header unpack size")
+    offset += 1
+    unpacked_size, offset = read_var64_at(header, offset)
+
+    if offset + 6 > len(header) or header[offset:offset + 2] != b"\x0a\x01":
+        raise ValueError("invalid 7z encoded header CRC")
+    expected_crc = struct.unpack_from("<L", header, offset + 2)[0]
+    offset += 6
+    if offset + 2 > len(header) or header[offset:offset + 2] != b"\x00\x00":
+        raise ValueError("invalid 7z encoded header terminator")
+
+    encrypted_header = streams[pack_pos:pack_pos + packed_size]
+    if len(encrypted_header) != packed_size:
+        raise ValueError("truncated 7z encoded header")
+
+    key = derive_7z_key(password, salt, rounds_power)
+    padded_header = aes256_cbc_decrypt(encrypted_header, key, iv)
+    if unpacked_size > len(padded_header):
+        raise ValueError("invalid 7z encoded header size")
+    decoded_header = padded_header[:unpacked_size]
+
+    if crc32(decoded_header) != expected_crc:
+        raise ValueError("wrong password or damaged archive")
+
+    return decoded_header, pack_pos
+
+
 def derive_7z_key(password, salt, rounds_power):
     password_bytes = password.encode("utf-16-le")
     digest = hashlib.sha256()
@@ -285,7 +337,7 @@ def decrypt_archive(data, password):
         raise ValueError("archive is too small")
 
     magic, major, minor, next_header_crc = struct.unpack("<6sBBL", data[:12])
-    if magic != MAGIC or major != 0 or minor < 3:
+    if magic != b"7z\xbc\xaf'\x1c" or major != 0 or minor < 3:
         raise ValueError("bad 7z magic or version")
 
     section_header = data[12:32]
@@ -298,13 +350,23 @@ def decrypt_archive(data, password):
     if header_end > len(data):
         raise ValueError("truncated archive")
 
-    body = data[32:header_start]
+    streams = data[32:header_start]
     header = data[header_start:header_end]
     if crc32(header) != header_crc:
         raise ValueError("7z trailing header CRC mismatch")
 
+    header, encoded_header_start = decrypt_encoded_header(header, streams, password)
+
     offset = require_find(header, bytes.fromhex("01 04 06 00 01 09"))
     body_size, offset = read_var64_at(header, offset)
+    if body_size > len(streams):
+        raise ValueError("7z packed size mismatch")
+    if encoded_header_start is None:
+        if len(streams) != body_size:
+            raise ValueError("7z packed size mismatch")
+    elif encoded_header_start != body_size:
+        raise ValueError("unsupported 7z archive layout")
+    body = streams[:body_size]
 
     props, offset, unpacked_size_count = read_aes_properties(header, offset)
     rounds_power, salt, iv = parse_aes_properties(props)
@@ -329,9 +391,6 @@ def decrypt_archive(data, password):
     offset += 1
 
     filename = read_file_name(header, offset)
-
-    if len(body) != body_size:
-        raise ValueError("7z packed size mismatch")
 
     key = derive_7z_key(password, salt, rounds_power)
     plaintext_padded = aes256_cbc_decrypt(body, key, iv)

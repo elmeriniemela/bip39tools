@@ -365,8 +365,9 @@ class BackupArchiveTest(unittest.TestCase):
             archive_path = Path(tmp) / "backup.7z"
 
             with mock.patch.object(ENCRYPT_BACKUP, "ROUNDS_POWER", TEST_ROUNDS_POWER):
-                with mock.patch.object(ENCRYPT_BACKUP.getpass, "getpass", side_effect=[WORDS_12, PASSWORD, PASSWORD]):
-                    self.assertEqual(0, ENCRYPT_BACKUP.main([str(archive_path)]))
+                with mock.patch("builtins.input", return_value=WORDS_12):
+                    with mock.patch.object(ENCRYPT_BACKUP.getpass, "getpass", side_effect=[PASSWORD, PASSWORD]):
+                        self.assertEqual(0, ENCRYPT_BACKUP.main([str(archive_path)]))
 
             stdout = StdoutCapture()
             with mock.patch.object(DECRYPT_BACKUP.getpass, "getpass", return_value=PASSWORD):
@@ -418,13 +419,14 @@ class BackupArchiveTest(unittest.TestCase):
             with self.subTest(message=message):
                 stderr = io.StringIO()
                 with mock.patch.object(ENCRYPT_BACKUP, "build_archive") as build_archive:
-                    with mock.patch.object(
-                        ENCRYPT_BACKUP.getpass,
-                        "getpass",
-                        side_effect=[mnemonic, PASSWORD, PASSWORD],
-                    ):
-                        with mock.patch.object(sys, "stderr", stderr):
-                            self.assertEqual(1, ENCRYPT_BACKUP.main(["backup.7z"]))
+                    with mock.patch("builtins.input", return_value=mnemonic):
+                        with mock.patch.object(
+                            ENCRYPT_BACKUP.getpass,
+                            "getpass",
+                            side_effect=[PASSWORD, PASSWORD],
+                        ):
+                            with mock.patch.object(sys, "stderr", stderr):
+                                self.assertEqual(1, ENCRYPT_BACKUP.main(["backup.7z"]))
 
                 build_archive.assert_not_called()
                 self.assertIn(message, stderr.getvalue())

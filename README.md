@@ -9,6 +9,11 @@ Run the automated tests from this directory with:
 python3 -m unittest discover -s tests
 ```
 
+Update checksums
+
+```sh
+find *.py -type f -exec sha256sum {} + > sha256-manifest.txt
+```
 
 ### 1. Dice rolls BIP39(SHA256(rolls_ascii))
 Technical specification for transforming dice rolls into seed words:

@@ -117,8 +117,26 @@ python3 -m unittest tests/test_dice_word_mapping_fuzz.py
 ```
 
 
+### 2. BIP85 child BIP39 seed words.
 
-### 2. Encrypt/Decrypt backup archive.
+`bip85.py` derives English BIP39 child mnemonics using the BIP85 BIP39
+application path `m/83696968'/39'/0'/{word_count}'/{index}'`. The parent
+mnemonic is converted to its BIP39 seed with an empty BIP39 passphrase.
+
+```sh
+# Prompts for the parent mnemonic.
+python3 bip85.py 12 0
+```
+
+Supported child word counts are 12, 15, 18, 21, and 24.
+
+Run the tests:
+```sh
+python3 -m unittest tests/test_bip85.py
+```
+
+
+### 3. Encrypt/Decrypt backup archive.
 
 `encrypt_backup.py` creates a minimal encrypted 7z archive containing one
 plaintext file named `backup.txt`. The file contains a generated comment with

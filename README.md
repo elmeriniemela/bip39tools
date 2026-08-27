@@ -12,7 +12,7 @@ python3 -m unittest discover -s tests
 Update checksums
 
 ```sh
-find *.py *.sh *.txt *.sed -type f -exec sha256sum {} + > SHA256SUMS
+sha256sum *.py *.sh *.txt *.sed > SHA256SUMS
 ```
 
 ### 1. Dice rolls BIP39(SHA256(rolls_ascii))

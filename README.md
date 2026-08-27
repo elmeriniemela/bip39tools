@@ -37,13 +37,15 @@ Technical specification for transforming dice rolls into seed words:
 ```sh
 # Generate 50 random dice faces for a 12-word seed test. Dependencies: tr, head.
 tr -dc '1-6' </dev/urandom | head -c 50; echo
-# Use python to convert the dice rolls into BIP39 mnemonic. Dependencies: python3+std libraries: hashlib.sha256, argparse, pathlib
+# Use python to convert the dice rolls into BIP39 mnemonic.
+# Dependencies: python3+std libraries: hashlib.sha256, argparse, pathlib
 ./dice.py 12 44266664153554464254321232633466466235664323326523
-# Use bash tools to convert the dice rolls to BIP39 mnemonic by using bc base-2048 output and a
-# checked-in sed map from base-2048 digits to BIP39 words. Dependencies: bash,
-# sha256sum, cut, xxd, bc, xargs, sed, paste
+# Use bash tools to convert the dice rolls to BIP39 mnemonic, by using
+# bc base-2048 output and a checked-in sed map from base-2048 digits to BIP39 words.
+# Dependencies: bash, sha256sum, cut, xxd, bc, xargs, sed, paste
 ./dice.sh 12 44266664153554464254321232633466466235664323326523
-# Result: vacuum ethics glimpse cable grit comfort reason festival nothing balance grant design
+# Result:
+# vacuum ethics glimpse cable grit comfort reason festival nothing balance grant design
 # Regenerate the map of 11-bit integers 0..2047 into words if bip39-eng.txt ever changes.
 awk '{printf "s/^%04d$/%s/\n", NR-1, $0}' bip39-eng.txt > bip39-bc2048.sed
 ```

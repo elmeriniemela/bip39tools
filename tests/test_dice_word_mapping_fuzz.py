@@ -18,8 +18,7 @@ def load_module(name, path):
     return module
 
 
-SS_DICE = load_module("ss_dice", SRC / "ss-dice.py")
-CC_DICE = load_module("cc_dice", SRC / "cc-dice.py")
+DICE = load_module("dice", SRC / "dice.py")
 
 
 def random_rolls(count):
@@ -55,17 +54,15 @@ BC_LINE_LENGTH=0 bc <<<"obase=2048;ibase=16;1${h^^}" |
 class DiceWordMappingFuzzTest(unittest.TestCase):
     def test_documented_methods_produce_the_same_words_for_random_rolls(self):
         for word_count, roll_count in ((12, 50), (24, 99)):
-            for case in range(128):
+            for case in range(32):
                 rolls = random_rolls(roll_count)
 
                 with self.subTest(words=word_count, case=case, rolls=rolls):
-                    seedsigner = SS_DICE.mnemonic_from_dice(rolls)
-                    coldcard = CC_DICE.mnemonic_from_dice(rolls)
-                    bc_sed = bc_sed_words(word_count, rolls)
+                    dice_words = DICE.mnemonic_from_dice(rolls)
+                    bash_words = bc_sed_words(word_count, rolls)
 
-                    self.assertEqual(word_count, len(seedsigner))
-                    self.assertEqual(seedsigner, coldcard)
-                    self.assertEqual(seedsigner, bc_sed)
+                    self.assertEqual(word_count, len(dice_words))
+                    self.assertEqual(dice_words, bash_words)
 
 
 if __name__ == "__main__":

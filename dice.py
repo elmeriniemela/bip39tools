@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Verify SeedSigner dice-roll seed words.
+"""Turn dicerolls into a BIP-39 mnemonic
 
 Usage:
-    ./ss-dice.py -n 24 123456...
-    printf '%s\n' 123456... | ./ss-dice.py -n 12
+    ./dice.py -n 24 123456...
+    printf '%s\n' 123456... | ./dice.py -n 12
 
 Inspiration/source references:
 - seedsigner/src/seedsigner/helpers/mnemonic_generation.py
@@ -54,8 +54,6 @@ def mnemonic_from_dice(rolls):
     words = [WORDLIST[int(bits[i : i + 11], 2)] for i in range(0, len(bits), 11)]
 
     # Join the selected BIP39 words with spaces (Spec 10).
-    space_sep = ' '.join(words)
-    print(f"{space_sep} / rolls: {len(rolls)} / entropy: {entropy.hex()}")
     return words
 
 def main():
@@ -72,13 +70,14 @@ def main():
     if re.search(r"[^1-6]", rolls):
         raise SystemExit("Dice rolls must contain only digits 1 through 6.")
 
-    # SeedSigner requires exact roll counts for the requested seed length
-    # (Spec 2).
     expected_rolls = 50 if args.words == 12 else 99
     if len(rolls) != expected_rolls:
-        raise SystemExit(f"SeedSigner requires exactly {expected_rolls} rolls for {args.words} words.")
+        raise SystemExit(f"Exactly {expected_rolls} rolls required for {args.words} words.")
 
-    mnemonic_from_dice(rolls)
+    words = mnemonic_from_dice(rolls)
+    space_sep = ' '.join(words)
+    print(words)
+
 
 
 if __name__ == "__main__":

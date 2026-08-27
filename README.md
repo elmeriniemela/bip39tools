@@ -37,76 +37,13 @@ Technical specification for transforming dice rolls into seed words:
 ```sh
 # Generate 50 random dice faces for a 12-word seed test. Dependencies: tr, head.
 tr -dc '1-6' </dev/urandom | head -c 50; echo
-# Verify the 12-word SeedSigner result for the sample dice rolls. Dependencies: python3+std libraries: hashlib.sha256, argparse, pathlib
-rolls=44266664153554464254321232633466466235664323326523; ./ss-dice.py -n 12 "$rolls"
-# Verify the 12-word COLDCARD result for the sample dice rolls. Dependencies: python3+std libraries: hashlib.sha256, argparse, pathlib
-rolls=44266664153554464254321232633466466235664323326523; ./cc-dice.py -n 12 "$rolls"
-# Convert the sample rolls to BIP39 words by using bc base-2048 output and a
+# Use python to convert the dice rolls into BIP39 mnemonic. Dependencies: python3+std libraries: hashlib.sha256, argparse, pathlib
+rolls=44266664153554464254321232633466466235664323326523; ./dice.py -n 12 "$rolls"
+# Use bash tools to convert the dice rolls to BIP39 mnemonic by using bc base-2048 output and a
 # checked-in sed map from base-2048 digits to BIP39 words. Dependencies: bash,
 # sha256sum, cut, xxd, bc, xargs, sed, paste
-#
-# Trace for the sample rolls:
-# - rolls=... sets the input dice digits for this 50-roll, 12-word example
-#   (Spec 1, Spec 2):
-#   44266664153554464254321232633466466235664323326523
-# - printf %s "$rolls" sends those exact ASCII bytes into sha256sum, without
-#   adding a newline (Spec 1, Spec 3).
-# - sha256sum sends this dice-roll digest line into cut (Spec 3):
-#   f089b58c8ff66a5c6cc2a996c235969d526ba4ed59037f8f892346e4c3883bfb  -
-# - cut -c1-32 keeps the first 16 entropy bytes for a 12-word seed, so h
-#   becomes (Spec 4):
-#   f089b58c8ff66a5c6cc2a996c235969d
-# - xxd -r -p <<<"$h" converts h from hex to raw entropy bytes and sends those
-#   bytes into sha256sum for the BIP39 checksum (Spec 5). Shown as hex:
-#   f0 89 b5 8c 8f f6 6a 5c 6c c2 a9 96 c2 35 96 9d
-# - sha256sum sends this entropy-checksum digest line into cut (Spec 5):
-#   e630926e1e130db1dd3c5704b344bfd9de34c168fa50332ed92d6def9da1897f  -
-# - cut -c1 keeps the first checksum nibble, e, and h+=... appends those
-#   4 checksum bits to the entropy for a 12-word seed. h is now
-#   entropy || checksum_bits (Spec 5, Spec 6):
-#   f089b58c8ff66a5c6cc2a996c235969de
-# - BC_LINE_LENGTH=0 prevents bc from wrapping the base-2048 output before it
-#   is piped to xargs.
-# - bc receives this expression. The leading 1 is a sentinel so leading zero
-#   base-2048 groups are preserved; ${h^^} uppercases h for ibase=16. This
-#   treats h as the big-endian bit string from Spec 6:
-#   obase=2048;ibase=16;1F089B58C8FF66A5C6CC2A996C235969DE
-# - bc sends these base-2048 groups into xargs. Ignoring the sentinel, these
-#   are the 11-bit groups interpreted as integers (Spec 7, Spec 8):
-#   0001 1924 0621 0793 0255 0821 0369 1432 0681 1206 0141 0813 0478
-# - xargs -n1 sends one group per line into sed:
-#   0001
-#   1924
-#   0621
-#   0793
-#   0255
-#   0821
-#   0369
-#   1432
-#   0681
-#   1206
-#   0141
-#   0813
-#   0478
-# - sed -e '1d' removes the sentinel line, then bip39-bc2048.sed maps the
-#   remaining base-2048 groups to BIP39 words and sends them into paste
-#   (Spec 9):
-#   vacuum
-#   ethics
-#   glimpse
-#   cable
-#   grit
-#   comfort
-#   reason
-#   festival
-#   nothing
-#   balance
-#   grant
-#   design
-# - paste -sd' ' joins the words into the final one-line seed phrase (Spec 10):
-#   vacuum ethics glimpse cable grit comfort reason festival nothing balance grant design
 rolls=44266664153554464254321232633466466235664323326523; h=$(printf %s "$rolls"|sha256sum|cut -c1-32); h+=$(xxd -r -p<<<"$h"|sha256sum|cut -c1); BC_LINE_LENGTH=0 bc<<<"obase=2048;ibase=16;1${h^^}"|xargs -n1|sed -e '1d' -f bip39-bc2048.sed|paste -sd' '
-# vacuum ethics glimpse cable grit comfort reason festival nothing balance grant design
+# Result: vacuum ethics glimpse cable grit comfort reason festival nothing balance grant design
 # Regenerate the map of 11-bit integers 0..2047 into words if bip39-eng.txt ever changes.
 awk '{printf "s/^%04d$/%s/\n", NR-1, $0}' bip39-eng.txt > bip39-bc2048.sed
 ```

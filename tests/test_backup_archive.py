@@ -432,7 +432,8 @@ class BackupArchiveTest(unittest.TestCase):
                 self.assertIn(message, stderr.getvalue())
 
     def test_decrypts_documented_coldcard_backup_sample_when_available(self):
-        sample = ROOT.parent / "coldcard-firmware" / "docs" / "backup.7z"
+        # https://github.com/Coldcard/firmware/raw/refs/heads/master/docs/backup.7z
+        sample = ROOT / "tests/data/backup.7z"
         if not sample.exists():
             self.skipTest("Coldcard sample archive is not available")
 

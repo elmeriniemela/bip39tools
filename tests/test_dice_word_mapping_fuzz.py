@@ -25,27 +25,9 @@ def random_rolls(count):
     return "".join(random.choice(DICE_FACES) for _ in range(count))
 
 
-def bc_sed_words(word_count, rolls):
-    entropy_hex_digits, checksum_hex_digits = {12: (32, 1), 24: (64, 2)}[word_count]
-
+def dice_sh_words(word_count, rolls):
     return subprocess.check_output(
-        [
-            "bash",
-            "-c",
-            """
-set -euo pipefail
-h=$(printf %s "$1" | sha256sum | cut -c "1-$2")
-h+=$(xxd -r -p <<<"$h" | sha256sum | cut -c "1-$3")
-BC_LINE_LENGTH=0 bc <<<"obase=2048;ibase=16;1${h^^}" |
-  xargs -n1 |
-  sed -e '1d' -f bip39-bc2048.sed |
-  paste -sd' '
-""",
-            "bc_sed_words",
-            rolls,
-            str(entropy_hex_digits),
-            str(checksum_hex_digits),
-        ],
+        [SRC / "dice.sh", str(word_count), rolls],
         cwd=ROOT,
         text=True,
     ).split()
@@ -59,7 +41,7 @@ class DiceWordMappingFuzzTest(unittest.TestCase):
 
                 with self.subTest(words=word_count, case=case, rolls=rolls):
                     dice_words = DICE.mnemonic_from_dice(rolls)
-                    bash_words = bc_sed_words(word_count, rolls)
+                    bash_words = dice_sh_words(word_count, rolls)
 
                     self.assertEqual(word_count, len(dice_words))
                     self.assertEqual(dice_words, bash_words)

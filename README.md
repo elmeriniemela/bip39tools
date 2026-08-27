@@ -12,7 +12,7 @@ python3 -m unittest discover -s tests
 Update checksums
 
 ```sh
-find *.py -type f -exec sha256sum {} + > sha256-manifest.txt
+find *.py *.sh *.txt *.sed -type f -exec sha256sum {} + > SHA256SUMS
 ```
 
 ### 1. Dice rolls BIP39(SHA256(rolls_ascii))
@@ -38,11 +38,11 @@ Technical specification for transforming dice rolls into seed words:
 # Generate 50 random dice faces for a 12-word seed test. Dependencies: tr, head.
 tr -dc '1-6' </dev/urandom | head -c 50; echo
 # Use python to convert the dice rolls into BIP39 mnemonic. Dependencies: python3+std libraries: hashlib.sha256, argparse, pathlib
-rolls=44266664153554464254321232633466466235664323326523; ./dice.py -n 12 "$rolls"
+./dice.py 12 44266664153554464254321232633466466235664323326523
 # Use bash tools to convert the dice rolls to BIP39 mnemonic by using bc base-2048 output and a
 # checked-in sed map from base-2048 digits to BIP39 words. Dependencies: bash,
 # sha256sum, cut, xxd, bc, xargs, sed, paste
-rolls=44266664153554464254321232633466466235664323326523; h=$(printf %s "$rolls"|sha256sum|cut -c1-32); h+=$(xxd -r -p<<<"$h"|sha256sum|cut -c1); BC_LINE_LENGTH=0 bc<<<"obase=2048;ibase=16;1${h^^}"|xargs -n1|sed -e '1d' -f bip39-bc2048.sed|paste -sd' '
+./dice.sh 12 44266664153554464254321232633466466235664323326523
 # Result: vacuum ethics glimpse cable grit comfort reason festival nothing balance grant design
 # Regenerate the map of 11-bit integers 0..2047 into words if bip39-eng.txt ever changes.
 awk '{printf "s/^%04d$/%s/\n", NR-1, $0}' bip39-eng.txt > bip39-bc2048.sed

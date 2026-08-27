@@ -2,8 +2,7 @@
 """Turn dicerolls into a BIP-39 mnemonic
 
 Usage:
-    ./dice.py -n 24 123456...
-    printf '%s\n' 123456... | ./dice.py -n 12
+    ./dice.py 24 123456...
 
 Inspiration/source references:
 - seedsigner/src/seedsigner/helpers/mnemonic_generation.py
@@ -58,14 +57,12 @@ def mnemonic_from_dice(rolls):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-n", "--words", type=int, choices=(12, 24), default=24)
-    parser.add_argument("rolls", nargs="?", help="dice rolls, using digits 1 through 6")
+    parser.add_argument("words", type=int, choices=(12, 24))
+    parser.add_argument("rolls", help="dice rolls, using digits 1 through 6")
     args = parser.parse_args()
 
     rolls = args.rolls
 
-    if not rolls:
-        raise SystemExit("No dice rolls provided.")
     # Only dice face digits are valid for this CLI argument (Spec 1).
     if re.search(r"[^1-6]", rolls):
         raise SystemExit("Dice rolls must contain only digits 1 through 6.")
@@ -75,8 +72,7 @@ def main():
         raise SystemExit(f"Exactly {expected_rolls} rolls required for {args.words} words.")
 
     words = mnemonic_from_dice(rolls)
-    space_sep = ' '.join(words)
-    print(words)
+    print(' '.join(words))
 
 
 

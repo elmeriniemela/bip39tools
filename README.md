@@ -136,7 +136,33 @@ python3 -m unittest tests/test_bip85.py
 ```
 
 
-### 3. Encrypt/Decrypt backup archive.
+### 3. BIP39 root extended private key
+
+`xprv.py` derives a mainnet BIP32 root extended private key from a valid English
+BIP39 mnemonic. It uses an empty BIP39 passphrase.
+
+```sh
+# Prompts for the mnemonic.
+python3 xprv.py
+```
+
+The resulting `xprv` contains the root private key and chain code. Wallet
+addresses also depend on the address type and derivation path. For example, a
+mainnet native Segwit single-signature wallet compatible with SeedSigner's
+`m/84'/0'/0'` account uses this Bitcoin Core descriptor:
+
+```text
+wpkh(XPRV/84h/0h/0h/<0;1>/*)
+```
+
+Replace `XPRV` with the printed value. Bitcoin Core requires a descriptor
+checksum for `importdescriptors`; obtain it with `getdescriptorinfo`, append it
+after `#`, and import the checksummed descriptor into a blank descriptor wallet.
+Use timestamp `0` when recovering historical transactions, or `"now"` only for
+a wallet that has never been used.
+
+
+### 4. Encrypt/Decrypt backup archive.
 
 `encrypt_backup.py` creates a minimal encrypted 7z archive containing one
 plaintext file named `backup.txt`. The file contains a generated comment with

@@ -6,7 +6,7 @@ Misc BIP39 related tools/scripts.
 Run the automated tests from this directory with:
 
 ```sh
-python3 -m unittest discover -s tests
+python3 -m unittest discover -s tests -v
 ```
 
 Update checksums

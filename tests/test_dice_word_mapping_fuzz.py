@@ -4,12 +4,7 @@ import subprocess
 import unittest
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[1]
-SRC = ROOT
-
-DICE_FACES = "123456"
-
 
 def load_module(name, path):
     spec = importlib.util.spec_from_file_location(name, path)
@@ -18,16 +13,14 @@ def load_module(name, path):
     return module
 
 
-DICE = load_module("dice", SRC / "dice.py")
-
+DICE = load_module("dice", ROOT / "dice.py")
 
 def random_rolls(count):
-    return "".join(random.choice(DICE_FACES) for _ in range(count))
-
+    return "".join(random.choice("123456") for _ in range(count))
 
 def dice_sh_words(word_count, rolls):
     return subprocess.check_output(
-        [SRC / "dice.sh", str(word_count), rolls],
+        [ROOT / "dice.sh", str(word_count), rolls],
         cwd=ROOT,
         text=True,
     ).split()

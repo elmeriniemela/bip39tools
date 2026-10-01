@@ -1,7 +1,12 @@
 
 ## BIP-39 Tools
 
-Misc BIP39 related tools/scripts.
+This repository contains short, easy-to-review scripts for basic operations with
+Bitcoin secrets, such as generating and deriving BIP-39 material.
+The scripts use only common, general-purpose tools, minimizing reliance on
+specialized cryptographic dependencies that users would need to trust with their
+secrets. Each script is designed to be self-contained, so it can be copied and
+reviewed independently.
 
 Run the automated tests from this directory with:
 
